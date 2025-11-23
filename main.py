@@ -4,8 +4,9 @@ import time
 import requests
 import io
 import random
-import threading  # <--- SİHİRLİ KELİME BU
-from flask import Flask # Render için gerekli
+import threading
+import sys # Sistem komutları için
+from flask import Flask
 from difflib import SequenceMatcher
 from datetime import datetime
 
@@ -29,27 +30,28 @@ RSS_KAYNAKLARI = [
     "https://www.ntvspor.net/rss",
 ]
 
-# --- AKILLI ETİKET SİSTEMİ ---
 GENEL_TAGLAR = ["#SonDakika", "#Haber", "#Gündem", "#Türkiye", "#News", "#Breaking"]
 KONU_SOZLUGU = {
     "istanbul": "#İstanbul", "ankara": "#Ankara", "izmir": "#İzmir",
-    "deprem": "#Deprem", "sarsıntı": "#Deprem", "afad": "#Deprem",
-    "dolar": "#Ekonomi", "euro": "#Ekonomi", "altın": "#Ekonomi",
+    "deprem": "#Deprem", "dolar": "#Ekonomi", "euro": "#Ekonomi", "altın": "#Ekonomi",
     "borsa": "#Borsa", "bitcoin": "#Kripto", "fenerbahçe": "#FB",
     "galatasaray": "#GS", "beşiktaş": "#BJK", "trabzonspor": "#TS",
-    "maç": "#Spor", "futbol": "#Spor", "apple": "#Teknoloji",
-    "yapay zeka": "#YapayZeka"
+    "maç": "#Spor", "futbol": "#Spor", "apple": "#Teknoloji", "yapay zeka": "#YapayZeka"
 }
 EMOJI_POOL = ["🚨", "⚡", "🔴", "🔥", "📢", "💥", "🌍", "🇹🇷"]
 
-# --- FLASK SUNUCUSU (RENDER İÇİN) ---
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "BOT CALISIYOR! 🟢"
+    return "BOT CALISIYOR! (V6.0)"
 
-# --- YARDIMCI FONKSİYONLAR ---
+# --- ZORLA YAZDIRMA FONKSİYONU ---
+def log_yaz(mesaj):
+    # flush=True komutu yazıyı ANINDA ekrana basar, bekletmez.
+    print(mesaj, flush=True)
+    sys.stdout.flush()
+
 def gorsel_linkini_bul(entry):
     if hasattr(entry, 'media_thumbnail') and len(entry.media_thumbnail) > 0:
         return entry.media_thumbnail[0]['url']
@@ -74,36 +76,33 @@ def akilli_etiket_sec(baslik):
         if rastgele not in secilenler: secilenler.append(rastgele)
     return " ".join(secilenler[:3])
 
-# --- ANA BOT MOTORU (THREAD OLARAK ÇALIŞACAK) ---
 def botu_calistir():
-    print("🛡️ GLOBAL ALARM (Threading Modu) Başlatılıyor...")
+    log_yaz("🛡️ GLOBAL ALARM (V6.0 - Zorla Yazdırma) Başlatılıyor...")
     paylasilan_basliklar = []
     
     client = None
     api_v1 = None
 
-    # Bağlantı Kur
     try:
         client = tweepy.Client(consumer_key=API_KEY, consumer_secret=API_SECRET, access_token=ACCESS_TOKEN, access_token_secret=ACCESS_SECRET)
         auth = tweepy.OAuth1UserHandler(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET)
         api_v1 = tweepy.API(auth)
         me = client.get_me()
-        print(f"✅ Twitter Girişi Başarılı: @{me.data.username}")
+        log_yaz(f"✅ Twitter Girişi Başarılı: @{me.data.username}")
     except Exception as e:
-        print(f"❌ Twitter Giriş Hatası: {e}")
+        log_yaz(f"❌ Twitter Giriş Hatası: {e}")
 
-    # ISINMA TURU
-    print("💾 Haberler hafızaya alınıyor...")
+    log_yaz("💾 Haberler hafızaya alınıyor...")
     for url in RSS_KAYNAKLARI:
         try:
             feed = feedparser.parse(url)
             for entry in feed.entries[:5]:
                 paylasilan_basliklar.append(entry.title)
         except: pass
-    print("✅ Hafıza hazır. Nöbet başladı.")
+    log_yaz("✅ Hafıza hazır. Nöbet başladı.")
 
     while True:
-        print(f"\n🔄 [{datetime.now().strftime('%H:%M:%S')}] Taranıyor...")
+        log_yaz(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Taranıyor...")
         yeni_haber_var_mi = False
 
         for url in RSS_KAYNAKLARI:
@@ -120,7 +119,7 @@ def botu_calistir():
                     if any(SequenceMatcher(None, baslik.lower(), eski.lower()).ratio() > 0.65 for eski in paylasilan_basliklar):
                         continue
 
-                    print(f"⚡ YENİ HABER: {baslik}")
+                    log_yaz(f"⚡ YENİ HABER: {baslik}")
                     
                     ozel_etiketler = akilli_etiket_sec(baslik)
                     emoji = random.choice(EMOJI_POOL)
@@ -145,7 +144,7 @@ def botu_calistir():
                                 resp = client.create_tweet(text=tweet_metni)
 
                             tweet_id = resp.data['id']
-                            print(f"   🐦 TWEET GİTTİ! ID: {tweet_id}")
+                            log_yaz(f"   🐦 TWEET GİTTİ! ID: {tweet_id}")
                             
                             time.sleep(2)
                             client.create_tweet(text=f"🔗 Detaylar:\n{link}", in_reply_to_tweet_id=tweet_id)
@@ -156,21 +155,20 @@ def botu_calistir():
                             
                             time.sleep(300) 
                         except Exception as e:
-                            print(f"   Tweet Hatası: {e}")
+                            log_yaz(f"   Tweet Hatası: {e}")
 
             except Exception as e:
                 continue
 
         if not yeni_haber_var_mi:
-            print("   (Yeni haber yok, bekleniyor...)")
+            log_yaz("   (Yeni haber yok, bekleniyor...)")
         
         time.sleep(600)
 
-# --- BAŞLATMA MERKEZİ ---
 if __name__ == "__main__":
-    # 1. Botu arka planda (ayrı kanalda) başlat
+    # Botu başlat
     t = threading.Thread(target=botu_calistir)
     t.start()
     
-    # 2. Web sunucusunu ana kanalda başlat (Render bunu bekliyor)
+    # Web sunucusunu başlat
     app.run(host='0.0.0.0', port=8080)
