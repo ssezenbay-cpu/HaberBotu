@@ -2,4 +2,4 @@ tweepy
 feedparser
 requests
 flask
-gunicorn
+threading
