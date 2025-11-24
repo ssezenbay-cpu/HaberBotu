@@ -11,10 +11,10 @@ from difflib import SequenceMatcher
 from datetime import datetime
 
 # --- ŞİFRELERİNİ BURAYA GİR ---
-API_KEY = "4PDFleEiAGaWDhm7vhkMY4A08"
-API_SECRET = "sGItq90SLOPmMFX0exkIFQFmA8IvnwsBgRI02LyqTkeCSGrLc7"
-ACCESS_TOKEN = "1931002435113234432-8uBBxCmuje2pbtanLYRjeIkyGVNklp"
-ACCESS_SECRET = "AL7kAYXPG4wRcX7o5spWdE11mIghLQ9hFcUSLQkSYyrhR"
+API_KEY = "Yf4Zz3yzVqnydwT4DE35T88DB"
+API_SECRET = "0hmuitu3CVBpytw3RAU9EqLWD6tLhTnjntvBDWZWx0e37rXU7J"
+ACCESS_TOKEN = "1931002435113234432-n8DSklCGhwSKCMcwK8UTpDa1eNbGRD"
+ACCESS_SECRET = "Fg1Fd9sFVvIScH1Nqx4sLswGzvR5QBkKD306Kj7HHm2Ob"
 
 # Kaynaklar
 RSS_KAYNAKLARI = [
@@ -172,3 +172,4 @@ if __name__ == "__main__":
     
     # Web sunucusunu başlat
     app.run(host='0.0.0.0', port=8080)
+
