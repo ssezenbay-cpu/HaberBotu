@@ -5,7 +5,7 @@ import requests
 import io
 import random
 import threading
-import sys # Sistem komutları için
+import sys
 from flask import Flask
 from difflib import SequenceMatcher
 from datetime import datetime
@@ -16,7 +16,6 @@ API_SECRET = "jA7vwzubDvhk70i7q9CdH7l7CpRYmlj2xhaOb9awsPW7zudsDu"
 ACCESS_TOKEN = "1992901155874324481-E1Cuznb26jDe2JN7owzdqsagimfUT9"
 ACCESS_SECRET = "f4tQxRjiFWAQcKEU4Runrw4q0LkRIlaL4o1fR455fty5A"
 
-# Kaynaklar
 RSS_KAYNAKLARI = [
     "https://www.ntv.com.tr/son-dakika.rss",
     "https://www.cumhuriyet.com.tr/rss/son-dakika.xml",
@@ -44,11 +43,9 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "BOT CALISIYOR! (V6.0)"
+    return "SENTINEL BOT CALISIYOR (V7.0)"
 
-# --- ZORLA YAZDIRMA FONKSİYONU ---
 def log_yaz(mesaj):
-    # flush=True komutu yazıyı ANINDA ekrana basar, bekletmez.
     print(mesaj, flush=True)
     sys.stdout.flush()
 
@@ -77,9 +74,8 @@ def akilli_etiket_sec(baslik):
     return " ".join(secilenler[:3])
 
 def botu_calistir():
-    log_yaz("🛡️ GLOBAL ALARM (V6.0 - Zorla Yazdırma) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V7.0 - Hız Korumalı) Başlatılıyor...")
     paylasilan_basliklar = []
-    
     client = None
     api_v1 = None
 
@@ -90,7 +86,7 @@ def botu_calistir():
         me = client.get_me()
         log_yaz(f"✅ Twitter Girişi Başarılı: @{me.data.username}")
     except Exception as e:
-        log_yaz(f"❌ Twitter Giriş Hatası: {e}")
+        log_yaz(f"❌ Giriş Hatası: {e}")
 
     log_yaz("💾 Haberler hafızaya alınıyor...")
     for url in RSS_KAYNAKLARI:
@@ -102,11 +98,11 @@ def botu_calistir():
     log_yaz("✅ Hafıza hazır. Nöbet başladı.")
 
     while True:
-        log_yaz(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Taranıyor...")
-        yeni_haber_var_mi = False
+        try:
+            log_yaz(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Taranıyor...")
+            yeni_haber_var_mi = False
 
-        for url in RSS_KAYNAKLARI:
-            try:
+            for url in RSS_KAYNAKLARI:
                 feed = feedparser.parse(url)
                 if not feed.entries: continue
 
@@ -153,25 +149,26 @@ def botu_calistir():
                             if len(paylasilan_basliklar) > 60: paylasilan_basliklar.pop(0)
                             yeni_haber_var_mi = True
                             
-                            time.sleep(300) 
+                            # YENİ HESAP İÇİN GÜVENLİK BEKLEMESİ (15 Dakika)
+                            log_yaz("   ⏳ Yeni hesap koruması: 15 dakika bekleniyor...")
+                            time.sleep(900) 
+
+                        except tweepy.errors.TooManyRequests:
+                            log_yaz("   ❌ 429 HIZ SINIRI! 30 Dakika Zorunlu Uyku...")
+                            time.sleep(1800) # 30 dakika blokla
                         except Exception as e:
                             log_yaz(f"   Tweet Hatası: {e}")
 
-            except Exception as e:
-                continue
+            if not yeni_haber_var_mi:
+                log_yaz("   (Yeni haber yok, bekleniyor...)")
+            
+            time.sleep(600)
 
-        if not yeni_haber_var_mi:
-            log_yaz("   (Yeni haber yok, bekleniyor...)")
-        
-        time.sleep(600)
+        except Exception as gen_e:
+            log_yaz(f"Genel Döngü Hatası: {gen_e}")
+            time.sleep(60)
 
 if __name__ == "__main__":
-    # Botu başlat
     t = threading.Thread(target=botu_calistir)
     t.start()
-    
-    # Web sunucusunu başlat
     app.run(host='0.0.0.0', port=8080)
-
-
-
