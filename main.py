@@ -19,6 +19,7 @@ ACCESS_SECRET = "f4tQxRjiFWAQcKEU4Runrw4q0LkRIlaL4o1fR455fty5A"
 # --- CİDDİ HABER KAYNAKLARI ---
 RSS_KAYNAKLARI = [
     "https://www.haberturk.com/rss/siyaset.xml",
+    "https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml",
     "https://t24.com.tr/rss",
     "https://www.trthaber.com/sondakika.rss",
     "https://www.ntv.com.tr/son-dakika.rss",
@@ -183,3 +184,4 @@ if __name__ == "__main__":
     t = threading.Thread(target=botu_calistir)
     t.start()
     app.run(host='0.0.0.0', port=8080)
+
