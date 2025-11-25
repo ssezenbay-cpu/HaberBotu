@@ -25,6 +25,7 @@ RSS_KAYNAKLARI = [
     "https://www.ntv.com.tr/son-dakika.rss",
     "https://www.gazeteduvar.com.tr/rss",
     "http://feeds.bbci.co.uk/turkce/rss.xml",
+    "https://tr.euronews.com/rss",
     "https://www.webtekno.com/rss.xml",
 ]
 
@@ -184,4 +185,5 @@ if __name__ == "__main__":
     t = threading.Thread(target=botu_calistir)
     t.start()
     app.run(host='0.0.0.0', port=8080)
+
 
