@@ -47,7 +47,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "SENTINEL TEK ATIS MODU AKTIF"
+    return "SENTINEL V12.1 (LINKLI MOD) AKTIF"
 
 def log_yaz(mesaj):
     print(mesaj, flush=True)
@@ -84,7 +84,7 @@ def etiketleri_belirle(baslik, kategori):
     return " ".join(etiketler[:4])
 
 def botu_calistir():
-    log_yaz("🛡️ SENTINEL (V12.0 - Tek Atış Modu) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V12.1 - Linkli Tek Atış) Başlatılıyor...")
     paylasilan_basliklar = []
     client = None
     api_v1 = None
@@ -130,7 +130,9 @@ def botu_calistir():
                     
                     ozel_etiketler = etiketleri_belirle(baslik, kategori)
                     emoji = random.choice(EMOJI_POOL)
-                    tweet_metni = f"{emoji} {baslik}\n\n{ozel_etiketler}"
+                    
+                    # --- DEĞİŞİKLİK BURADA: LİNKİ METNE EKLEDİK ---
+                    tweet_metni = f"{emoji} {baslik}\n\n{ozel_etiketler}\n\n🔗 {link}"
                     
                     media_id = None
                     img_url = gorsel_linkini_bul(haber)
@@ -143,7 +145,6 @@ def botu_calistir():
                             media_id = media.media_id
                         except: pass
 
-                    # TWEET ATMA (YORUM YOK - SADECE ANA TWEET)
                     if client:
                         try:
                             if media_id:
@@ -154,14 +155,11 @@ def botu_calistir():
                             tweet_id = resp.data['id']
                             log_yaz(f"   🐦 TWEET GİTTİ! ID: {tweet_id}")
                             
-                            # --- DEĞİŞİKLİK BURADA: YORUM KISMI SİLİNDİ ---
-                            # Link paylaşmıyoruz, direkt listeye ekleyip beklemeye geçiyoruz.
-                            
                             paylasilan_basliklar.append(baslik)
                             if len(paylasilan_basliklar) > 60: paylasilan_basliklar.pop(0)
                             yeni_haber_var_mi = True
                             
-                            # Yine de 1 saat bekle, garanti olsun
+                            # 1 SAAT BEKLEME (GÜVENLİK İÇİN ŞART)
                             log_yaz("   🛑 HIZ KORUMASI: 1 SAAT bekleniyor...")
                             time.sleep(3600)
                             break 
