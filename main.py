@@ -10,13 +10,13 @@ from flask import Flask
 from difflib import SequenceMatcher
 from datetime import datetime
 
-# --- ŞİFRELERİNİ BURAYA GİR ---
+# --- ŞİFRELERİNİ BURAYA GİR (Tırnakların içine) ---
 API_KEY = "Nu1x3YBFqmvfeW0q6h1djklvY"
 API_SECRET = "jA7vwzubDvhk70i7q9CdH7l7CpRYmlj2xhaOb9awsPW7zudsDu"
 ACCESS_TOKEN = "1992901155874324481-E1Cuznb26jDe2JN7owzdqsagimfUT9"
 ACCESS_SECRET = "f4tQxRjiFWAQcKEU4Runrw4q0LkRIlaL4o1fR455fty5A"
 
-# --- KAYNAKLAR ---
+# --- KAYNAKLAR (Sputnik Eklendi) ---
 RSS_VE_KATEGORI = [
     ("https://www.haberturk.com/rss/siyaset.xml", "siyaset"),
     ("https://t24.com.tr/rss", "genel"),
@@ -25,6 +25,7 @@ RSS_VE_KATEGORI = [
     ("https://www.gazeteduvar.com.tr/rss", "genel"),
     ("http://feeds.bbci.co.uk/turkce/rss.xml", "genel"),
     ("https://tr.euronews.com/rss", "dunya"),
+    ("https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml", "dunya"), # <-- SPUTNIK
     ("https://www.webtekno.com/rss.xml", "teknoloji"),
     ("https://www.donanimhaber.com/rss/tum/", "teknoloji")
 ]
@@ -47,7 +48,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "SENTINEL V12.1 (LINKLI MOD) AKTIF"
+    return "SENTINEL V12.3 (6 SAAT KORUMA + SPUTNIK) AKTIF"
 
 def log_yaz(mesaj):
     print(mesaj, flush=True)
@@ -84,7 +85,7 @@ def etiketleri_belirle(baslik, kategori):
     return " ".join(etiketler[:4])
 
 def botu_calistir():
-    log_yaz("🛡️ SENTINEL (V12.1 - Linkli Tek Atış) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V12.3 - 6 Saat Korumalı) Başlatılıyor...")
     paylasilan_basliklar = []
     client = None
     api_v1 = None
@@ -130,8 +131,6 @@ def botu_calistir():
                     
                     ozel_etiketler = etiketleri_belirle(baslik, kategori)
                     emoji = random.choice(EMOJI_POOL)
-                    
-                    # --- DEĞİŞİKLİK BURADA: LİNKİ METNE EKLEDİK ---
                     tweet_metni = f"{emoji} {baslik}\n\n{ozel_etiketler}\n\n🔗 {link}"
                     
                     media_id = None
@@ -145,36 +144,44 @@ def botu_calistir():
                             media_id = media.media_id
                         except: pass
 
+                    # --- TWEET ATMA ---
+                    basari = False
+                    deneme = 0
+                    
                     if client:
-                        try:
-                            if media_id:
-                                resp = client.create_tweet(text=tweet_metni, media_ids=[media_id])
-                            else:
-                                resp = client.create_tweet(text=tweet_metni)
+                        while not basari and deneme < 3:
+                            try:
+                                if media_id:
+                                    resp = client.create_tweet(text=tweet_metni, media_ids=[media_id])
+                                else:
+                                    resp = client.create_tweet(text=tweet_metni)
 
-                            tweet_id = resp.data['id']
-                            log_yaz(f"   🐦 TWEET GİTTİ! ID: {tweet_id}")
-                            
-                            paylasilan_basliklar.append(baslik)
-                            if len(paylasilan_basliklar) > 60: paylasilan_basliklar.pop(0)
-                            yeni_haber_var_mi = True
-                            
-                            # 1 SAAT BEKLEME (GÜVENLİK İÇİN ŞART)
-                            log_yaz("   🛑 HIZ KORUMASI: 1 SAAT bekleniyor...")
-                            time.sleep(3600)
-                            break 
+                                tweet_id = resp.data['id']
+                                log_yaz(f"   🐦 TWEET GİTTİ! ID: {tweet_id}")
+                                basari = True
+                                
+                                paylasilan_basliklar.append(baslik)
+                                if len(paylasilan_basliklar) > 60: paylasilan_basliklar.pop(0)
+                                yeni_haber_var_mi = True
+                                
+                                log_yaz("   🛑 HIZ KORUMASI: 1 SAAT bekleniyor...")
+                                time.sleep(3600) # Normal bekleme 1 saat
+                                break 
 
-                        except tweepy.errors.TooManyRequests:
-                            log_yaz("   ❌ 429 HIZ SINIRI! 2 SAAT Uyku...")
-                            time.sleep(7200)
-                        except Exception as e:
-                            log_yaz(f"   Tweet Hatası: {e}")
+                            except tweepy.errors.TooManyRequests:
+                                log_yaz("   ❌ 429 HIZ SINIRI! 6 SAAT Uyku...")
+                                basari = True
+                                time.sleep(21600) # CEZA ALIRSA 6 SAAT BEKLE
+                            except Exception as e:
+                                deneme += 1
+                                log_yaz(f"   ⚠️ Hata ({deneme}/3): {e}. 30 sn sonra tekrar...")
+                                time.sleep(30)
 
                 if yeni_haber_var_mi: break
 
             if not yeni_haber_var_mi:
                 log_yaz("   (Yeni haber yok, bekleniyor...)")
-                time.sleep(600)
+                time.sleep(600) # 10 dk ara ver
 
         except Exception as gen_e:
             log_yaz(f"Döngü Hatası: {gen_e}")
