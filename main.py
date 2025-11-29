@@ -16,13 +16,12 @@ API_SECRET = "jA7vwzubDvhk70i7q9CdH7l7CpRYmlj2xhaOb9awsPW7zudsDu"
 ACCESS_TOKEN = "1992901155874324481-E1Cuznb26jDe2JN7owzdqsagimfUT9"
 ACCESS_SECRET = "f4tQxRjiFWAQcKEU4Runrw4q0LkRIlaL4o1fR455fty5A"
 
-# --- DEV RSS LİSTESİ (HEPSİ DAHİL) ---
+# --- KAYNAKLAR ---
 RSS_VE_KATEGORI = [
-    # 🏛️ SİYASET & ANKARA
+    # 🏛️ SİYASET
     ("https://www.haberturk.com/rss/siyaset.xml", "siyaset"),
     ("https://www.sozcu.com.tr/rss/kategori/gundem", "siyaset"),
     ("https://www.gazeteduvar.com.tr/rss/politika", "siyaset"),
-    ("https://www.ensonhaber.com/rss/politika.xml", "siyaset"),
     ("https://www.trthaber.com/sondakika.rss", "siyaset"),
 
     # ⚽ SPOR
@@ -30,7 +29,7 @@ RSS_VE_KATEGORI = [
     ("https://www.fanatik.com.tr/rss/haberler/sondakika", "spor"),
     ("https://www.sporx.com/rss/sondakika.xml", "spor"),
 
-    # 🌍 GENEL & DÜNYA (Sputnik Dahil)
+    # 🌍 GENEL & DÜNYA
     ("https://www.ntv.com.tr/son-dakika.rss", "genel"),
     ("https://t24.com.tr/rss", "genel"),
     ("https://www.aa.com.tr/rss/ajansguncel.xml", "genel"),
@@ -48,7 +47,6 @@ RSS_VE_KATEGORI = [
 
 # --- ETİKETLER ---
 GENEL_TAGLAR = ["#SonDakika", "#Haber", "#Gündem", "#Türkiye", "#News"]
-
 KONU_SOZLUGU = {
     # Siyaset
     "cumhurbaşkanı": "#Cumhurbaşkanı", "erdoğan": "#RTE", "bakan": "#Bakanlık",
@@ -57,12 +55,12 @@ KONU_SOZLUGU = {
     "imamoğlu": "#İmamoğlu", "yavaş": "#MansurYavaş", "seçim": "#Seçim",
     "kayyum": "#Kayyum", "ankara": "#Ankara", "beştepe": "#Külliye",
 
-    # Spor (Tedesco Eklendi)
+    # Spor
     "galatasaray": "#Galatasaray", "cimbom": "#GS", "okan buruk": "#Galatasaray",
-    "fenerbahçe": "#Fenerbahçe", "kanarya": "#FB", "tedesco": "#Tedesco", "domenico tedesco": "#Fenerbahçe",
+    "fenerbahçe": "#Fenerbahçe", "kanarya": "#FB", "tedesco": "#Tedesco",
     "beşiktaş": "#Beşiktaş", "kartal": "#BJK",
     "trabzonspor": "#Trabzonspor", "fırtına": "#TS",
-    "milli takım": "#BizimÇocuklar", "arda güler": "#ArdaGüler", "kerem aktürkoğlu": "#Kerem",
+    "milli takım": "#BizimÇocuklar", "arda güler": "#ArdaGüler",
     "süper lig": "#SüperLig", "tff": "#TFF", "transfer": "#Transfer",
 
     # Ekonomi
@@ -74,13 +72,15 @@ KONU_SOZLUGU = {
     "abd": "#ABD", "rusya": "#Rusya", "ukrayna": "#Savaş", "gazze": "#Filistin"
 }
 
-EMOJI_POOL = ["🚨", "⚡", "🔴", "🔥", "📢", "🏛️", "🌍", "🇹🇷", "📡", "⚽", "🥅"]
+# --- SADECE CİDDİ EMOJİLER ---
+# Top, robot, para çantası vs. ÇIKARILDI.
+EMOJI_POOL = ["🚨", "⚡", "🔴", "🔥", "📢", "🏛️", "🌍", "🇹🇷", "📡"]
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "SENTINEL V13.2 (FINAL) AKTIF"
+    return "SENTINEL V13.4 (CIDDI EMOJI MODU) AKTIF"
 
 def log_yaz(mesaj):
     print(mesaj, flush=True)
@@ -120,7 +120,7 @@ def etiketleri_belirle(baslik, kategori):
     return " ".join(etiketler[:4])
 
 def botu_calistir():
-    log_yaz("🛡️ SENTINEL (V13.2 - Final) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V13.4 - Tam Ciddiyet) Başlatılıyor...")
     paylasilan_basliklar = []
     client = None
     api_v1 = None
@@ -145,7 +145,6 @@ def botu_calistir():
 
     while True:
         try:
-            # GECE UYKUSU (01:00 - 07:00)
             simdi_utc = datetime.utcnow()
             turkiye_saati = (simdi_utc.hour + 3) % 24
             if 1 <= turkiye_saati < 7:
@@ -173,7 +172,10 @@ def botu_calistir():
                     log_yaz(f"⚡ YENİ HABER ({kategori}): {baslik}")
                     
                     ozel_etiketler = etiketleri_belirle(baslik, kategori)
+                    
+                    # --- SADECE CİDDİ EMOJİLER ---
                     emoji = random.choice(EMOJI_POOL)
+                    
                     tweet_metni = f"{emoji} {baslik}\n\n{ozel_etiketler}\n\n🔗 {link}"
                     
                     media_id = None
@@ -187,7 +189,7 @@ def botu_calistir():
                             media_id = media.media_id
                         except: pass
 
-                    # TWEET ATMA (3 KERE DENE)
+                    # TWEET ATMA
                     basari = False
                     deneme = 0
                     
