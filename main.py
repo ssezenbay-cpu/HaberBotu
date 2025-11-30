@@ -11,76 +11,58 @@ from difflib import SequenceMatcher
 from datetime import datetime
 
 # --- ŞİFRELERİNİ BURAYA GİR ---
-API_KEY = "Nu1x3YBFqmvfeW0q6h1djklvY""
-API_SECRET = "jA7vwzubDvhk70i7q9CdH7l7CpRYmlj2xhaOb9awsPW7zudsDu""
+API_KEY = "Nu1x3YBFqmvfeW0q6h1djklvY"
+API_SECRET = "jA7vwzubDvhk70i7q9CdH7l7CpRYmlj2xhaOb9awsPW7zudsDu"
 ACCESS_TOKEN = "1992901155874324481-E1Cuznb26jDe2JN7owzdqsagimfUT9"
 ACCESS_SECRET = "f4tQxRjiFWAQcKEU4Runrw4q0LkRIlaL4o1fR455fty5A"
 
-# --- KAYNAKLAR (Tüm Liste) ---
+# --- KAYNAKLAR ---
 RSS_VE_KATEGORI = [
-    # 🏛️ SİYASET & ANKARA
     ("https://www.haberturk.com/rss/siyaset.xml", "siyaset"),
     ("https://www.sozcu.com.tr/rss/kategori/gundem", "siyaset"),
     ("https://www.gazeteduvar.com.tr/rss/politika", "siyaset"),
     ("https://www.ensonhaber.com/rss/politika.xml", "siyaset"),
     ("https://www.trthaber.com/sondakika.rss", "siyaset"),
-
-    # ⚽ SPOR
     ("https://www.ntvspor.net/rss", "spor"),
     ("https://www.fanatik.com.tr/rss/haberler/sondakika", "spor"),
     ("https://www.sporx.com/rss/sondakika.xml", "spor"),
-
-    # 🌍 GENEL & DÜNYA
     ("https://www.ntv.com.tr/son-dakika.rss", "genel"),
     ("https://t24.com.tr/rss", "genel"),
     ("https://www.aa.com.tr/rss/ajansguncel.xml", "genel"),
     ("http://feeds.bbci.co.uk/turkce/rss.xml", "genel"),
     ("https://tr.euronews.com/rss", "dunya"),
     ("https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml", "dunya"), 
-
-    # 📉 EKONOMİ
     ("https://www.dunya.com/rss", "ekonomi"),
-
-    # 📡 TEKNOLOJİ
     ("https://www.webtekno.com/rss.xml", "teknoloji"),
     ("https://shiftdelete.net/feed", "teknoloji")
 ]
 
 # --- ETİKETLER ---
 GENEL_TAGLAR = ["#SonDakika", "#Haber", "#Gündem", "#Türkiye", "#News"]
-
 KONU_SOZLUGU = {
-    # Siyaset
     "cumhurbaşkanı": "#Cumhurbaşkanı", "erdoğan": "#RTE", "bakan": "#Bakanlık",
     "meclis": "#TBMM", "chp": "#CHP", "ak parti": "#AKParti", "mhp": "#MHP",
     "iyi parti": "#İYİParti", "dem parti": "#DEM", "özgür özel": "#ÖzgürÖzel",
     "imamoğlu": "#İmamoğlu", "yavaş": "#MansurYavaş", "seçim": "#Seçim",
     "kayyum": "#Kayyum", "ankara": "#Ankara", "beştepe": "#Külliye",
-
-    # Spor
     "galatasaray": "#Galatasaray", "cimbom": "#GS", "okan buruk": "#Galatasaray",
     "fenerbahçe": "#Fenerbahçe", "kanarya": "#FB", "tedesco": "#Tedesco", "domenico tedesco": "#Fenerbahçe",
     "beşiktaş": "#Beşiktaş", "kartal": "#BJK",
     "trabzonspor": "#Trabzonspor", "fırtına": "#TS",
     "milli takım": "#BizimÇocuklar", "arda güler": "#ArdaGüler", "kerem aktürkoğlu": "#Kerem",
     "süper lig": "#SüperLig", "tff": "#TFF", "transfer": "#Transfer",
-
-    # Ekonomi
     "dolar": "#Ekonomi", "euro": "#Ekonomi", "altın": "#Altın", "borsa": "#Bist100",
     "faiz": "#MerkezBankası", "asgari ücret": "#AsgariÜcret", "bitcoin": "#Bitcoin",
-
-    # Teknoloji & Dünya
     "yapay zeka": "#YapayZeka", "apple": "#Teknoloji", "elon musk": "#ElonMusk",
     "abd": "#ABD", "rusya": "#Rusya", "ukrayna": "#Savaş", "gazze": "#Filistin"
 }
-
 EMOJI_POOL = ["🚨", "⚡", "🔴", "🔥", "📢", "🏛️", "🌍", "🇹🇷", "📡", "⚽", "🥅"]
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "SENTINEL V14.0 (7/24 AKTIF MOD) CALISIYOR"
+    return "SENTINEL V15.0 (7/24 FULL AKTIF)"
 
 def log_yaz(mesaj):
     print(mesaj, flush=True)
@@ -120,7 +102,7 @@ def etiketleri_belirle(baslik, kategori):
     return " ".join(etiketler[:4])
 
 def botu_calistir():
-    log_yaz("🛡️ SENTINEL (V14.0 - 7/24 Aktif) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V15.0 - 7/24 Kesintisiz Mod) Başlatılıyor...")
     paylasilan_basliklar = []
     client = None
     api_v1 = None
@@ -145,7 +127,6 @@ def botu_calistir():
 
     while True:
         try:
-            # --- SAAT KONTROLÜ YOK - 7/24 AKTİF ---
             log_yaz(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Taranıyor...")
             yeni_haber_var_mi = False
             random.shuffle(RSS_VE_KATEGORI)
@@ -163,7 +144,7 @@ def botu_calistir():
                     if any(SequenceMatcher(None, baslik.lower(), eski.lower()).ratio() > 0.65 for eski in paylasilan_basliklar):
                         continue
 
-                    log_yaz(f"⚡ YENİ HABER: {baslik}")
+                    log_yaz(f"⚡ YENİ HABER ({kategori}): {baslik}")
                     
                     ozel_etiketler = etiketleri_belirle(baslik, kategori)
                     emoji = random.choice(EMOJI_POOL)
@@ -185,7 +166,7 @@ def botu_calistir():
                     deneme = 0
                     
                     if client:
-                        while not basari and deneme < 3:
+                        while not basari and deneme < 3: # 3 Kere Dene
                             try:
                                 if media_id:
                                     resp = client.create_tweet(text=tweet_metni, media_ids=[media_id])
@@ -200,15 +181,14 @@ def botu_calistir():
                                 paylasilan_basliklar.append(baslik)
                                 if len(paylasilan_basliklar) > 60: paylasilan_basliklar.pop(0)
                                 
-                                # 1 SAAT BEKLEME (EN ÖNEMLİ KISIM)
                                 log_yaz("   🛑 GÖREV TAMAMLANDI: 1 SAAT bekleniyor...")
-                                time.sleep(3600)
+                                time.sleep(3600) # 1 SAAT BEKLEME
                                 break 
 
                             except tweepy.errors.TooManyRequests:
                                 log_yaz("   ❌ 429 HIZ SINIRI! 24 SAAT Uyku...")
                                 basari = True
-                                time.sleep(86400)
+                                time.sleep(86400) # 24 SAAT KORUMA
                             except Exception as e:
                                 deneme += 1
                                 log_yaz(f"   ⚠️ Hata ({deneme}/3): {e}. 30 sn sonra tekrar...")
