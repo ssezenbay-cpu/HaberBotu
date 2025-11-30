@@ -62,11 +62,20 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "SENTINEL V15.0 (7/24 FULL AKTIF)"
+    return "SENTINEL V15.1 (TIMEOUT KORUMALI) AKTIF"
 
 def log_yaz(mesaj):
     print(mesaj, flush=True)
     sys.stdout.flush()
+
+def rss_oku_guvenli(url):
+    """RSS'i 10 saniye zaman aşımı ile okur, takılmayı önler"""
+    try:
+        resp = requests.get(url, timeout=10) # 10 Saniye kuralı
+        return feedparser.parse(resp.content)
+    except Exception as e:
+        log_yaz(f"   ⚠️ Kaynak Hatası ({url}): {e}")
+        return None
 
 def gorsel_linkini_bul(entry):
     if hasattr(entry, 'media_thumbnail') and len(entry.media_thumbnail) > 0:
@@ -102,7 +111,7 @@ def etiketleri_belirle(baslik, kategori):
     return " ".join(etiketler[:4])
 
 def botu_calistir():
-    log_yaz("🛡️ SENTINEL (V15.0 - 7/24 Kesintisiz Mod) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V15.1 - Timeout Korumalı) Başlatılıyor...")
     paylasilan_basliklar = []
     client = None
     api_v1 = None
@@ -116,13 +125,12 @@ def botu_calistir():
     except Exception as e:
         log_yaz(f"❌ Giriş Hatası: {e}")
 
-    log_yaz("💾 Mevcut haberler hafızaya alınıyor...")
+    log_yaz("💾 Haberler hafızaya alınıyor (Hatalı kaynaklar atlanacak)...")
     for url, kat in RSS_VE_KATEGORI:
-        try:
-            feed = feedparser.parse(url)
+        feed = rss_oku_guvenli(url)
+        if feed and feed.entries:
             for entry in feed.entries[:5]:
                 paylasilan_basliklar.append(entry.title)
-        except: pass
     log_yaz("✅ Hafıza hazır. Nöbet başladı.")
 
     while True:
@@ -132,8 +140,9 @@ def botu_calistir():
             random.shuffle(RSS_VE_KATEGORI)
 
             for url, kategori in RSS_VE_KATEGORI:
-                feed = feedparser.parse(url)
-                if not feed.entries: continue
+                # Güvenli okuma fonksiyonunu kullan
+                feed = rss_oku_guvenli(url)
+                if not feed or not feed.entries: continue
 
                 for i in range(1):
                     haber = feed.entries[i]
@@ -144,7 +153,7 @@ def botu_calistir():
                     if any(SequenceMatcher(None, baslik.lower(), eski.lower()).ratio() > 0.65 for eski in paylasilan_basliklar):
                         continue
 
-                    log_yaz(f"⚡ YENİ HABER ({kategori}): {baslik}")
+                    log_yaz(f"⚡ YENİ HABER: {baslik}")
                     
                     ozel_etiketler = etiketleri_belirle(baslik, kategori)
                     emoji = random.choice(EMOJI_POOL)
@@ -166,7 +175,7 @@ def botu_calistir():
                     deneme = 0
                     
                     if client:
-                        while not basari and deneme < 3: # 3 Kere Dene
+                        while not basari and deneme < 3:
                             try:
                                 if media_id:
                                     resp = client.create_tweet(text=tweet_metni, media_ids=[media_id])
@@ -188,7 +197,7 @@ def botu_calistir():
                             except tweepy.errors.TooManyRequests:
                                 log_yaz("   ❌ 429 HIZ SINIRI! 24 SAAT Uyku...")
                                 basari = True
-                                time.sleep(86400) # 24 SAAT KORUMA
+                                time.sleep(86400)
                             except Exception as e:
                                 deneme += 1
                                 log_yaz(f"   ⚠️ Hata ({deneme}/3): {e}. 30 sn sonra tekrar...")
