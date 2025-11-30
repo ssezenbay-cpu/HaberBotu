@@ -8,7 +8,7 @@ import threading
 import sys
 from flask import Flask
 from difflib import SequenceMatcher
-from datetime import datetime
+from datetime import datetime, timedelta # Saat ayarı için timedelta eklendi
 
 # --- ŞİFRELERİNİ BURAYA GİR ---
 API_KEY = "Nu1x3YBFqmvfeW0q6h1djklvY"
@@ -18,29 +18,21 @@ ACCESS_SECRET = "f4tQxRjiFWAQcKEU4Runrw4q0LkRIlaL4o1fR455fty5A"
 
 # --- KAYNAKLAR ---
 RSS_VE_KATEGORI = [
-    # 🏛️ SİYASET
     ("https://www.haberturk.com/rss/siyaset.xml", "siyaset"),
     ("https://www.sozcu.com.tr/rss/kategori/gundem", "siyaset"),
     ("https://www.gazeteduvar.com.tr/rss/politika", "siyaset"),
+    ("https://www.ensonhaber.com/rss/politika.xml", "siyaset"),
     ("https://www.trthaber.com/sondakika.rss", "siyaset"),
-
-    # ⚽ SPOR
     ("https://www.ntvspor.net/rss", "spor"),
     ("https://www.fanatik.com.tr/rss/haberler/sondakika", "spor"),
     ("https://www.sporx.com/rss/sondakika.xml", "spor"),
-
-    # 🌍 GENEL & DÜNYA
     ("https://www.ntv.com.tr/son-dakika.rss", "genel"),
     ("https://t24.com.tr/rss", "genel"),
     ("https://www.aa.com.tr/rss/ajansguncel.xml", "genel"),
     ("http://feeds.bbci.co.uk/turkce/rss.xml", "genel"),
     ("https://tr.euronews.com/rss", "dunya"),
     ("https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml", "dunya"), 
-
-    # 📉 EKONOMİ
     ("https://www.dunya.com/rss", "ekonomi"),
-
-    # 📡 TEKNOLOJİ
     ("https://www.webtekno.com/rss.xml", "teknoloji"),
     ("https://shiftdelete.net/feed", "teknoloji")
 ]
@@ -48,39 +40,29 @@ RSS_VE_KATEGORI = [
 # --- ETİKETLER ---
 GENEL_TAGLAR = ["#SonDakika", "#Haber", "#Gündem", "#Türkiye", "#News"]
 KONU_SOZLUGU = {
-    # Siyaset
     "cumhurbaşkanı": "#Cumhurbaşkanı", "erdoğan": "#RTE", "bakan": "#Bakanlık",
     "meclis": "#TBMM", "chp": "#CHP", "ak parti": "#AKParti", "mhp": "#MHP",
     "iyi parti": "#İYİParti", "dem parti": "#DEM", "özgür özel": "#ÖzgürÖzel",
     "imamoğlu": "#İmamoğlu", "yavaş": "#MansurYavaş", "seçim": "#Seçim",
     "kayyum": "#Kayyum", "ankara": "#Ankara", "beştepe": "#Külliye",
-
-    # Spor
     "galatasaray": "#Galatasaray", "cimbom": "#GS", "okan buruk": "#Galatasaray",
-    "fenerbahçe": "#Fenerbahçe", "kanarya": "#FB", "tedesco": "#Tedesco",
+    "fenerbahçe": "#Fenerbahçe", "kanarya": "#FB", "tedesco": "#Tedesco", "domenico tedesco": "#Fenerbahçe",
     "beşiktaş": "#Beşiktaş", "kartal": "#BJK",
     "trabzonspor": "#Trabzonspor", "fırtına": "#TS",
-    "milli takım": "#BizimÇocuklar", "arda güler": "#ArdaGüler",
+    "milli takım": "#BizimÇocuklar", "arda güler": "#ArdaGüler", "kerem aktürkoğlu": "#Kerem",
     "süper lig": "#SüperLig", "tff": "#TFF", "transfer": "#Transfer",
-
-    # Ekonomi
     "dolar": "#Ekonomi", "euro": "#Ekonomi", "altın": "#Altın", "borsa": "#Bist100",
     "faiz": "#MerkezBankası", "asgari ücret": "#AsgariÜcret", "bitcoin": "#Bitcoin",
-
-    # Teknoloji & Dünya
     "yapay zeka": "#YapayZeka", "apple": "#Teknoloji", "elon musk": "#ElonMusk",
     "abd": "#ABD", "rusya": "#Rusya", "ukrayna": "#Savaş", "gazze": "#Filistin"
 }
-
-# --- SADECE CİDDİ EMOJİLER ---
-# Top, robot, para çantası vs. ÇIKARILDI.
-EMOJI_POOL = ["🚨", "⚡", "🔴", "🔥", "📢", "🏛️", "🌍", "🇹🇷", "📡"]
+EMOJI_POOL = ["🚨", "⚡", "🔴", "🔥", "📢", "🏛️", "🌍", "🇹🇷", "📡", "⚽", "🥅"]
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "SENTINEL V13.4 (CIDDI EMOJI MODU) AKTIF"
+    return "SENTINEL V14.1 (TR SAAT AYARLI) AKTIF"
 
 def log_yaz(mesaj):
     print(mesaj, flush=True)
@@ -102,7 +84,6 @@ def gorsel_linkini_bul(entry):
 def etiketleri_belirle(baslik, kategori):
     baslik_kucuk = baslik.lower()
     etiketler = []
-    
     if kategori == "siyaset": etiketler.append("#Siyaset")
     elif kategori == "spor": etiketler.append("#Spor")
     elif kategori == "teknoloji": etiketler.append("#Teknoloji")
@@ -120,7 +101,7 @@ def etiketleri_belirle(baslik, kategori):
     return " ".join(etiketler[:4])
 
 def botu_calistir():
-    log_yaz("🛡️ SENTINEL (V13.4 - Tam Ciddiyet) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V14.1 - TR Saati) Başlatılıyor...")
     paylasilan_basliklar = []
     client = None
     api_v1 = None
@@ -145,14 +126,17 @@ def botu_calistir():
 
     while True:
         try:
-            simdi_utc = datetime.utcnow()
-            turkiye_saati = (simdi_utc.hour + 3) % 24
-            if 1 <= turkiye_saati < 7:
-                log_yaz(f"🌙 GECE MODU: Saat {turkiye_saati}:00. Bot uykuya geçiyor...")
+            # --- TÜRKİYE SAATİ AYARI (UTC + 3) ---
+            tr_zamani = datetime.utcnow() + timedelta(hours=3)
+            saat = tr_zamani.hour
+            
+            # GECE MODU (01:00 - 07:00 ARASI UYKU)
+            if 1 <= saat < 7:
+                log_yaz(f"🌙 GECE MODU: Saat {tr_zamani.strftime('%H:%M')}. Bot uykuya geçiyor...")
                 time.sleep(600) 
                 continue 
 
-            log_yaz(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Taranıyor...")
+            log_yaz(f"🔄 [{tr_zamani.strftime('%H:%M:%S')}] Taranıyor...")
             yeni_haber_var_mi = False
             random.shuffle(RSS_VE_KATEGORI)
 
@@ -172,10 +156,7 @@ def botu_calistir():
                     log_yaz(f"⚡ YENİ HABER ({kategori}): {baslik}")
                     
                     ozel_etiketler = etiketleri_belirle(baslik, kategori)
-                    
-                    # --- SADECE CİDDİ EMOJİLER ---
                     emoji = random.choice(EMOJI_POOL)
-                    
                     tweet_metni = f"{emoji} {baslik}\n\n{ozel_etiketler}\n\n🔗 {link}"
                     
                     media_id = None
