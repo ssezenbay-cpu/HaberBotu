@@ -6,6 +6,7 @@ import io
 import random
 import threading
 import sys
+import os
 from flask import Flask
 from difflib import SequenceMatcher
 from datetime import datetime
@@ -16,27 +17,29 @@ API_SECRET = "jA7vwzubDvhk70i7q9CdH7l7CpRYmlj2xhaOb9awsPW7zudsDu"
 ACCESS_TOKEN = "1992901155874324481-E1Cuznb26jDe2JN7owzdqsagimfUT9"
 ACCESS_SECRET = "f4tQxRjiFWAQcKEU4Runrw4q0LkRIlaL4o1fR455fty5A"
 
-# --- KAYNAKLAR ---
+# --- YENİLENMİŞ VE GÜÇLENDİRİLMİŞ RSS LİSTESİ ---
 RSS_VE_KATEGORI = [
-    # 🏛️ SİYASET & ANKARA
-    ("https://www.haberturk.com/rss/siyaset.xml", "siyaset"),
+    # 🏛️ SİYASET & ANKARA (En Sağlam Kaynaklar)
     ("https://www.sozcu.com.tr/rss/kategori/gundem", "siyaset"),
+    ("https://www.karar.com/rss/gundem", "siyaset"),
+    ("https://www.haber7.com/rss/siyaset", "siyaset"),
+    ("https://www.yenisafak.com/rss/gundem", "siyaset"),
     ("https://www.gazeteduvar.com.tr/rss/politika", "siyaset"),
-    ("https://www.ensonhaber.com/rss/politika.xml", "siyaset"),
     ("https://www.trthaber.com/sondakika.rss", "siyaset"),
+    ("https://www.ensonhaber.com/rss/politika.xml", "siyaset"),
 
-    # ⚽ SPOR
-    ("https://www.ntvspor.net/rss", "spor"),
+    # ⚽ SPOR (Genişletilmiş Havuz)
+    ("https://www.fotomac.com.tr/rss/anasayfa.xml", "spor"),
+    ("https://www.sabah.com.tr/rss/spor.xml", "spor"),
     ("https://www.fanatik.com.tr/rss/haberler/sondakika", "spor"),
     ("https://www.sporx.com/rss/sondakika.xml", "spor"),
+    ("https://www.ntvspor.net/rss", "spor"),
 
-    # 🌍 GENEL & DÜNYA
+    # 🌍 DÜNYA & GENEL
     ("https://www.ntv.com.tr/son-dakika.rss", "genel"),
     ("https://t24.com.tr/rss", "genel"),
     ("https://www.aa.com.tr/rss/ajansguncel.xml", "genel"),
-    ("http://feeds.bbci.co.uk/turkce/rss.xml", "genel"),
-    ("https://tr.euronews.com/rss", "dunya"),
-    ("https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml", "dunya"), 
+    ("https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml", "dunya"), # Sputnik
 
     # 📉 EKONOMİ
     ("https://www.dunya.com/rss", "ekonomi"),
@@ -46,50 +49,61 @@ RSS_VE_KATEGORI = [
     ("https://shiftdelete.net/feed", "teknoloji")
 ]
 
-# --- ETİKETLER ---
-GENEL_TAGLAR = ["#SonDakika", "#Haber", "#Gündem", "#Türkiye", "#News"]
+# --- SADELEŞTİRİLMİŞ ETİKETLER ---
+# Sadece #SonDakika kalsın dedin, diğer çöpleri attık.
+GENEL_TAGLAR = ["#SonDakika"] 
+
+# Konu özelinde nokta atışı etiketler (Bunlar kalmalı ki ilgili kitle görsün)
 KONU_SOZLUGU = {
     # Siyaset
     "cumhurbaşkanı": "#Cumhurbaşkanı", "erdoğan": "#RTE", "bakan": "#Bakanlık",
     "meclis": "#TBMM", "chp": "#CHP", "ak parti": "#AKParti", "mhp": "#MHP",
     "iyi parti": "#İYİParti", "dem parti": "#DEM", "özgür özel": "#ÖzgürÖzel",
     "imamoğlu": "#İmamoğlu", "yavaş": "#MansurYavaş", "seçim": "#Seçim",
-    "kayyum": "#Kayyum", "ankara": "#Ankara", "beştepe": "#Külliye",
+    "kayyum": "#Kayyum", "ankara": "#Ankara", "beştepe": "#Külliye", "bahçeli": "#MHP",
     
     # Spor
-    "galatasaray": "#Galatasaray", "cimbom": "#GS", "okan buruk": "#Galatasaray",
-    "fenerbahçe": "#Fenerbahçe", "kanarya": "#FB", "tedesco": "#Tedesco", "domenico tedesco": "#Fenerbahçe",
-    "beşiktaş": "#Beşiktaş", "kartal": "#BJK",
-    "trabzonspor": "#Trabzonspor", "fırtına": "#TS",
+    "galatasaray": "#Galatasaray", "cimbom": "#GS", "okan buruk": "#Galatasaray", "osimhen": "#Galatasaray",
+    "fenerbahçe": "#Fenerbahçe", "kanarya": "#FB", "tedesco": "#Fenerbahçe", "mourinho": "#Fenerbahçe",
+    "beşiktaş": "#Beşiktaş", "kartal": "#BJK", "gio": "#Beşiktaş",
+    "trabzonspor": "#Trabzonspor", "fırtına": "#TS", "şenol güneş": "#Trabzonspor",
     "milli takım": "#BizimÇocuklar", "arda güler": "#ArdaGüler", "kerem aktürkoğlu": "#Kerem",
     "süper lig": "#SüperLig", "tff": "#TFF", "transfer": "#Transfer",
     
-    # Ekonomi
+    # Ekonomi & Dünya & Teknoloji
     "dolar": "#Ekonomi", "euro": "#Ekonomi", "altın": "#Altın", "borsa": "#Bist100",
     "faiz": "#MerkezBankası", "asgari ücret": "#AsgariÜcret", "bitcoin": "#Bitcoin",
-    
-    # Teknoloji & Dünya
-    "yapay zeka": "#YapayZeka", "apple": "#Teknoloji", "elon musk": "#ElonMusk",
-    "abd": "#ABD", "rusya": "#Rusya", "ukrayna": "#Savaş", "gazze": "#Filistin"
+    "abd": "#ABD", "rusya": "#Rusya", "ukrayna": "#Savaş", "gazze": "#Filistin", "suriye": "#Suriye",
+    "yapay zeka": "#YapayZeka", "apple": "#Teknoloji", "elon musk": "#ElonMusk"
 }
 
-# --- AYRILMIŞ EMOJI HAVUZLARI ---
-EMOJI_GENEL = ["🚨", "⚡", "🔴", "🔥", "📢", "🏛️", "🌍", "🇹🇷", "📡"] # Asla top yok
-EMOJI_SPOR = ["⚽", "🥅", "🏆", "🏃", "⚡"] # Sadece sporda kullanılacak
+# Sadece ciddi emojiler
+EMOJI_POOL = ["🚨", "⚡", "🔴", "🔥", "📢", "🏛️", "🌍", "🇹🇷", "📡"]
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "SENTINEL V15.2 (AKILLI EMOJI + FULL KORUMA) AKTIF"
+    return "SENTINEL V17.0 (90 DAKIKA MODU) CALISIYOR"
 
 def log_yaz(mesaj):
     print(mesaj, flush=True)
     sys.stdout.flush()
 
+# --- UYANIK BEKLEME (RENDER KAPATMASIN DİYE) ---
+def uyanik_bekle(saniye):
+    dakika = saniye // 60
+    for i in range(dakika):
+        time.sleep(60) 
+        # Her 10 dakikada bir sinyal ver
+        if i % 10 == 0:
+            log_yaz(f"   ⏳ Bekleniyor... ({i}/{dakika} dk)")
+    
+    time.sleep(saniye % 60)
+
 def rss_oku_guvenli(url):
     try:
-        resp = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=15) # Süreyi biraz artırdık
         return feedparser.parse(resp.content)
     except Exception as e:
         log_yaz(f"   ⚠️ Kaynak Hatası ({url}): {e}")
@@ -112,24 +126,19 @@ def etiketleri_belirle(baslik, kategori):
     baslik_kucuk = baslik.lower()
     etiketler = []
     
-    if kategori == "siyaset": etiketler.append("#Siyaset")
-    elif kategori == "spor": etiketler.append("#Spor")
-    elif kategori == "teknoloji": etiketler.append("#Teknoloji")
-    elif kategori == "dunya": etiketler.append("#Dünya")
-    elif kategori == "ekonomi": etiketler.append("#Ekonomi")
-    else: etiketler.append("#SonDakika")
-    
+    # Sadece konuyla ilgili ÖZEL etiket varsa ekle (FB, GS, Dolar vb.)
     for kelime, etiket in KONU_SOZLUGU.items():
         if kelime in baslik_kucuk and etiket not in etiketler:
             etiketler.append(etiket)
+    
+    # En sona mutlaka #SonDakika ekle
+    if "#SonDakika" not in etiketler:
+        etiketler.append("#SonDakika")
             
-    while len(etiketler) < 3:
-        secilen = random.choice(GENEL_TAGLAR)
-        if secilen not in etiketler: etiketler.append(secilen)
-    return " ".join(etiketler[:4])
+    return " ".join(etiketler[:3]) # Maksimum 3 etiket (Sade görünüm)
 
 def botu_calistir():
-    log_yaz("🛡️ SENTINEL (V15.2 - Akıllı Emoji) Başlatılıyor...")
+    log_yaz("🛡️ SENTINEL (V17.0 - 90 Dakika Arayla) Başlatılıyor...")
     paylasilan_basliklar = []
     client = None
     api_v1 = None
@@ -170,16 +179,10 @@ def botu_calistir():
                     if any(SequenceMatcher(None, baslik.lower(), eski.lower()).ratio() > 0.65 for eski in paylasilan_basliklar):
                         continue
 
-                    log_yaz(f"⚡ YENİ HABER ({kategori}): {baslik}")
+                    log_yaz(f"⚡ YENİ HABER: {baslik}")
                     
                     ozel_etiketler = etiketleri_belirle(baslik, kategori)
-                    
-                    # --- AKILLI EMOJI SEÇİMİ ---
-                    if kategori == "spor":
-                        emoji = random.choice(EMOJI_SPOR)
-                    else:
-                        emoji = random.choice(EMOJI_GENEL)
-                        
+                    emoji = random.choice(EMOJI_POOL)
                     tweet_metni = f"{emoji} {baslik}\n\n{ozel_etiketler}\n\n🔗 {link}"
                     
                     media_id = None
@@ -213,17 +216,18 @@ def botu_calistir():
                                 paylasilan_basliklar.append(baslik)
                                 if len(paylasilan_basliklar) > 60: paylasilan_basliklar.pop(0)
                                 
-                                log_yaz("   🛑 GÖREV TAMAMLANDI: 1 SAAT bekleniyor...")
-                                time.sleep(3600)
+                                # --- 90 DAKİKA BEKLEME (5400 SANİYE) ---
+                                log_yaz("   🛑 GÖREV TAMAMLANDI: 90 DAKİKA bekleniyor...")
+                                uyanik_bekle(5400) 
                                 break 
 
                             except tweepy.errors.TooManyRequests:
-                                log_yaz("   ❌ 429 HIZ SINIRI! 24 SAAT Uyku...")
+                                log_yaz("   ❌ 429 HIZ SINIRI! 24 SAAT Uyanık Bekleme...")
+                                uyanik_bekle(86400)
                                 basari = True
-                                time.sleep(86400)
                             except Exception as e:
                                 deneme += 1
-                                log_yaz(f"   ⚠️ Hata ({deneme}/3): {e}. 30 sn sonra tekrar...")
+                                log_yaz(f"   ⚠️ Hata ({deneme}/3): {e}. 30 sn beklendi...")
                                 time.sleep(30)
 
                 if yeni_haber_var_mi: break
@@ -239,4 +243,5 @@ def botu_calistir():
 if __name__ == "__main__":
     t = threading.Thread(target=botu_calistir)
     t.start()
-    app.run(host='0.0.0.0', port=8080)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
